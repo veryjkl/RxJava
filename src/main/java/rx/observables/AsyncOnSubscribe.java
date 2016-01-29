@@ -29,7 +29,7 @@ import rx.internal.operators.*;
 import rx.observers.*;
 import rx.plugins.RxJavaPlugins;
 import rx.subscriptions.CompositeSubscription;
-;
+
 /**
  * A utility class to create {@code OnSubscribe<T>} functions that respond correctly to back
  * pressure requests from subscribers. This is an improvement over
@@ -264,7 +264,7 @@ public abstract class AsyncOnSubscribe<S, T> implements OnSubscribe<T> {
         private final Func3<? super S, Long, ? super Observer<Observable<? extends T>>, ? extends S> next;
         private final Action1<? super S> onUnsubscribe;
 
-        private AsyncOnSubscribeImpl(Func0<? extends S> generator, Func3<? super S, Long, ? super Observer<Observable<? extends T>>, ? extends S> next, Action1<? super S> onUnsubscribe) {
+        AsyncOnSubscribeImpl(Func0<? extends S> generator, Func3<? super S, Long, ? super Observer<Observable<? extends T>>, ? extends S> next, Action1<? super S> onUnsubscribe) {
             this.generator = generator;
             this.next = next;
             this.onUnsubscribe = onUnsubscribe;
@@ -355,7 +355,7 @@ public abstract class AsyncOnSubscribe<S, T> implements OnSubscribe<T> {
 
         private final AsyncOnSubscribe<S, T> parent;
         private final SerializedObserver<Observable<? extends T>> serializedSubscriber;
-        private final CompositeSubscription subscriptions = new CompositeSubscription();
+        final CompositeSubscription subscriptions = new CompositeSubscription();
 
         private boolean hasTerminated;
         private boolean onNextCalled;
@@ -647,7 +647,7 @@ public abstract class AsyncOnSubscribe<S, T> implements OnSubscribe<T> {
         }
 
         static final class State<T> implements OnSubscribe<T> {
-            private Subscriber<? super T> subscriber;
+            Subscriber<? super T> subscriber;
             @Override
             public void call(Subscriber<? super T> s) {
                 synchronized (this) {

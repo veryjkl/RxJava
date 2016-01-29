@@ -50,7 +50,8 @@ import rx.internal.util.RxJavaPluginUtils;
  * <ul>
  * <li>Allows only single execution of either {@code onError} or {@code onCompleted}.</li>
  * <li>Ensures that once an {@code onCompleted} or {@code onError} is performed, no further calls can be executed</li>
- * <li>If {@code unsubscribe} is called, calls {@code onCompleted} and forbids any further {@code onNext} calls.</li>
+ * <li>If {@code unsubscribe} is called, the upstream {@code Observable} is notified and the event delivery will be stopped in a
+ * best effort manner (i.e., further onXXX calls may still slip through).</li>
  * <li>When {@code onError} or {@code onCompleted} occur, unsubscribes from the {@code Observable} (if executing asynchronously).</li>
  * </ul>
  * {@code SafeSubscriber} will not synchronize {@code onNext} execution. Use {@link SerializedSubscriber} to do
@@ -140,9 +141,7 @@ public class SafeSubscriber<T> extends Subscriber<T> {
         } catch (Throwable e) {
             // we handle here instead of another method so we don't add stacks to the frame
             // which can prevent it from being able to handle StackOverflow
-            Exceptions.throwIfFatal(e);
-            // handle errors if the onNext implementation fails, not just if the Observable fails
-            onError(e);
+            Exceptions.throwOrReport(e, this);
         }
     }
 

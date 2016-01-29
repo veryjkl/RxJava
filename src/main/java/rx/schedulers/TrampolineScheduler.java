@@ -18,7 +18,6 @@ package rx.schedulers;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import rx.Scheduler;
 import rx.Subscription;
@@ -47,12 +46,13 @@ public final class TrampolineScheduler extends Scheduler {
 
     private static class InnerCurrentThreadScheduler extends Scheduler.Worker implements Subscription {
 
-        private static final AtomicIntegerFieldUpdater<InnerCurrentThreadScheduler> COUNTER_UPDATER = AtomicIntegerFieldUpdater.newUpdater(InnerCurrentThreadScheduler.class, "counter");
-        @SuppressWarnings("unused")
-        volatile int counter;
-        private final PriorityBlockingQueue<TimedAction> queue = new PriorityBlockingQueue<TimedAction>();
+        final AtomicInteger counter = new AtomicInteger();
+        final PriorityBlockingQueue<TimedAction> queue = new PriorityBlockingQueue<TimedAction>();
         private final BooleanSubscription innerSubscription = new BooleanSubscription();
         private final AtomicInteger wip = new AtomicInteger();
+
+        InnerCurrentThreadScheduler() {
+        }
 
         @Override
         public Subscription schedule(Action0 action) {
@@ -70,7 +70,7 @@ public final class TrampolineScheduler extends Scheduler {
             if (innerSubscription.isUnsubscribed()) {
                 return Subscriptions.unsubscribed();
             }
-            final TimedAction timedAction = new TimedAction(action, execTime, COUNTER_UPDATER.incrementAndGet(this));
+            final TimedAction timedAction = new TimedAction(action, execTime, counter.incrementAndGet());
             queue.add(timedAction);
 
             if (wip.getAndIncrement() == 0) {
@@ -111,7 +111,7 @@ public final class TrampolineScheduler extends Scheduler {
         final Long execTime;
         final int count; // In case if time between enqueueing took less than 1ms
 
-        private TimedAction(Action0 action, Long execTime, int count) {
+        TimedAction(Action0 action, Long execTime, int count) {
             this.action = action;
             this.execTime = execTime;
             this.count = count;
@@ -128,7 +128,7 @@ public final class TrampolineScheduler extends Scheduler {
     }
 
     // because I can't use Integer.compare from Java 7
-    private static int compare(int x, int y) {
+    static int compare(int x, int y) {
         return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
 
